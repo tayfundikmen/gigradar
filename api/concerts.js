@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   const code = ev.dates?.status?.code;
   if (code === 'cancelled' || code === 'postponed') return 'announced';
   if (saleStart && saleStart > now) return 'soon';
-  if (saleStart && saleStart <= now && (!saleEnd || saleEnd > now)) return 'on-sale';
+  if (saleStart && saleStart <= now && (!saleEnd || saleEnd > now) && code !== 'offsale') return 'on-sale';
   return 'announced';
 })(),
       onSaleDate: ev.sales?.public?.startDateTime
