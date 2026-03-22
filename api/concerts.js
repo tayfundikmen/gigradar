@@ -25,10 +25,16 @@ export default async function handler(req, res) {
       time: ev.dates?.start?.localTime || '',
       venue: ev._embedded?.venues?.[0]?.name || 'TBA',
       city: ev._embedded?.venues?.[0]?.city?.name || 'UK',
-      status: ev.dates?.status?.code === 'onsale' ? 'on-sale'
-            : ev.dates?.status?.code === 'offsale' ? 'announced'
-            : ev.sales?.public?.startDateTime && new Date(ev.sales.public.startDateTime) > new Date()
-            ? 'soon' : 'announced',
+      status: (() => {
+  const now = new Date();
+  const saleStart = ev.sales?.public?.startDateTime ? new Date(ev.sales.public.startDateTime) : null;
+  const saleEnd = ev.sales?.public?.endDateTime ? new Date(ev.sales.public.endDateTime) : null;
+  const code = ev.dates?.status?.code;
+  if (code === 'cancelled' || code === 'postponed') return 'announced';
+  if (saleStart && saleStart > now) return 'soon';
+  if (saleStart && saleStart <= now && (!saleEnd || saleEnd > now)) return 'on-sale';
+  return 'announced';
+})(),
       onSaleDate: ev.sales?.public?.startDateTime
         ? new Date(ev.sales.public.startDateTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
         : 'TBA',
