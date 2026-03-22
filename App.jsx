@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const STYLE = `
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -16,7 +16,7 @@ const STYLE = `
     background-size: 200px;
   }
   .onboard-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-  .onboard-box { width: 100%; max-width: 580px; }
+  .onboard-box { width: 100%; max-width: 600px; }
   .ob-logo-tag { font-size: 11px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; font-weight: 500; margin-bottom: 8px; }
   .ob-logo { font-family: var(--font-display); font-size: clamp(52px, 10vw, 80px); line-height: 1; letter-spacing: 2px; margin-bottom: 40px; }
   .ob-logo span { color: var(--accent); }
@@ -25,56 +25,94 @@ const STYLE = `
   .ob-step-dot.active { background: var(--accent); width: 24px; border-radius: 3px; }
   .ob-step-dot.done { background: var(--accent); opacity: 0.4; }
   .ob-title { font-family: var(--font-display); font-size: 32px; letter-spacing: 1px; margin-bottom: 8px; }
-  .ob-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
-  .ob-search-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .ob-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+
+  /* SEARCH */
+  .search-box { position: relative; margin-bottom: 6px; }
+  .search-box-input {
+    width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+    padding: 13px 44px 13px 16px; color: var(--text); font-family: var(--font-body); font-size: 15px; outline: none; transition: border-color 0.2s;
+  }
+  .search-box-input:focus { border-color: var(--accent); }
+  .search-box-input::placeholder { color: var(--muted); }
+  .search-spinner { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 16px; }
+
+  /* DROPDOWN */
+  .dropdown {
+    background: var(--card2); border: 1px solid var(--border); border-radius: 6px;
+    overflow: hidden; margin-bottom: 20px; max-height: 320px; overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .dropdown-section-label {
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+    padding: 10px 16px 6px; border-bottom: 1px solid var(--border);
+  }
+  .dropdown-item {
+    display: flex; align-items: center; gap: 14px; padding: 11px 16px;
+    cursor: pointer; transition: background 0.15s; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .dropdown-item:last-child { border-bottom: none; }
+  .dropdown-item:hover { background: rgba(255,255,255,0.04); }
+  .dropdown-item.selected { background: rgba(232,255,71,0.05); }
+  .d-img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; background: var(--border); flex-shrink: 0; }
+  .d-img-placeholder { width: 40px; height: 40px; border-radius: 4px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .d-info { flex: 1; overflow: hidden; }
+  .d-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .d-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .d-check { color: var(--accent); font-size: 16px; flex-shrink: 0; }
+  .d-add { font-size: 18px; color: var(--muted); flex-shrink: 0; }
+  .dropdown-item:hover .d-add { color: var(--accent); }
+
+  /* SELECTED CHIPS */
+  .selected-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; min-height: 32px; }
+  .selected-chip {
+    display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 5px;
+    background: rgba(232,255,71,0.08); border: 1px solid rgba(232,255,71,0.25); border-radius: 20px;
+    font-size: 13px; color: var(--accent); animation: popIn 0.2s ease;
+  }
+  .chip-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: var(--border); }
+  .chip-avatar-placeholder { width: 24px; height: 24px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .chip-remove { background: none; border: none; color: inherit; cursor: pointer; font-size: 15px; line-height: 1; padding: 0; opacity: 0.5; }
+  .chip-remove:hover { opacity: 1; }
+  .ob-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; align-items: center; }
+
+  .ob-btn {
+    padding: 13px 22px; background: var(--accent); border: none; border-radius: 6px;
+    color: #000; font-family: var(--font-body); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; transition: opacity 0.2s;
+  }
+  .ob-btn:hover { opacity: 0.88; }
+  .ob-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .ob-btn-outline {
+    padding: 13px 22px; background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: var(--font-body); font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;
+  }
+  .ob-btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .skip-btn { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; text-decoration: underline; }
+  .skip-btn:hover { color: var(--text); }
+
+  /* CITY */
+  .city-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .city-chip {
+    display: flex; align-items: center; gap: 8px; padding: 7px 14px;
+    background: rgba(71,212,255,0.08); border: 1px solid rgba(71,212,255,0.25); border-radius: 20px;
+    font-size: 13px; color: var(--accent3); animation: popIn 0.2s ease;
+  }
+  .city-chip .chip-remove { color: var(--accent3); }
   .ob-input {
     flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 6px;
     padding: 13px 16px; color: var(--text); font-family: var(--font-body); font-size: 14px; outline: none; transition: border-color 0.2s;
   }
-  .ob-input:focus { border-color: var(--accent); }
+  .ob-input:focus { border-color: var(--accent3); }
   .ob-input::placeholder { color: var(--muted); }
-  .ob-btn {
-    padding: 13px 20px; background: var(--accent); border: none; border-radius: 6px;
-    color: #000; font-family: var(--font-body); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; transition: opacity 0.2s;
+  .ob-search-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .ob-btn-city {
+    padding: 13px 20px; background: var(--accent3); border: none; border-radius: 6px;
+    color: #000; font-family: var(--font-body); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap;
   }
-  .ob-btn:hover { opacity: 0.88; }
-  .ob-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .ob-btn-outline {
-    padding: 13px 20px; background: none; border: 1px solid var(--border); border-radius: 6px;
-    color: var(--text); font-family: var(--font-body); font-weight: 500; font-size: 14px; cursor: pointer; transition: border-color 0.2s;
-  }
-  .ob-btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-  .search-results { display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; max-height: 280px; overflow-y: auto; }
-  .search-result-item {
-    display: flex; align-items: center; gap: 14px; padding: 12px 16px;
-    background: var(--card); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.2s;
-  }
-  .search-result-item:hover { border-color: var(--accent); background: var(--card2); }
-  .search-result-item.selected { border-color: var(--accent); background: rgba(232,255,71,0.05); }
-  .result-img { width: 44px; height: 44px; border-radius: 4px; object-fit: cover; background: var(--border); flex-shrink: 0; }
-  .result-img-placeholder { width: 44px; height: 44px; border-radius: 4px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-  .result-info { flex: 1; overflow: hidden; }
-  .result-name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .result-genre { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .result-check { color: var(--accent); font-size: 18px; }
-  .selected-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; min-height: 36px; }
-  .selected-chip {
-    display: flex; align-items: center; gap: 8px; padding: 6px 12px;
-    background: rgba(232,255,71,0.08); border: 1px solid rgba(232,255,71,0.3); border-radius: 20px; font-size: 13px; color: var(--accent);
-    animation: popIn 0.2s ease;
-  }
-  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .chip-remove { background: none; border: none; color: inherit; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; opacity: 0.6; }
-  .chip-remove:hover { opacity: 1; }
-  .ob-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; align-items: center; }
-  .city-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-  .city-chip {
-    display: flex; align-items: center; gap: 8px; padding: 8px 16px;
-    background: rgba(71,212,255,0.08); border: 1px solid rgba(71,212,255,0.3); border-radius: 20px; font-size: 13px; color: var(--accent3);
-    animation: popIn 0.2s ease;
-  }
-  .skip-btn { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; text-decoration: underline; }
-  .skip-btn:hover { color: var(--text); }
+  .ob-btn-city:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* MAIN APP */
   .app { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
   .header { display: flex; align-items: flex-end; justify-content: space-between; padding: 40px 0 28px; border-bottom: 1px solid var(--border); margin-bottom: 36px; }
   .logo-tag { font-size: 11px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; font-weight: 500; }
@@ -124,7 +162,7 @@ const STYLE = `
   .status-announced { background: rgba(255,255,255,0.05); color: var(--muted); }
   .btn-tickets { font-size: 11px; padding: 5px 12px; background: none; border: 1px solid var(--border); border-radius: 3px; color: var(--text); cursor: pointer; font-family: var(--font-body); text-decoration: none; transition: all 0.2s; }
   .btn-tickets:hover { border-color: var(--accent); color: var(--accent); }
-  .city-filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; align-items: center; }
+  .city-filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
   .city-filter-btn { padding: 8px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 20px; color: var(--muted); font-size: 13px; cursor: pointer; transition: all 0.2s; }
   .city-filter-btn:hover, .city-filter-btn.active { border-color: var(--accent3); color: var(--accent3); background: rgba(71,212,255,0.05); }
   .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
@@ -139,6 +177,27 @@ const STYLE = `
     .header { flex-direction: column; align-items: flex-start; gap: 8px; }
   }
 `;
+
+// Popular UK artists as suggestions when no query
+const POPULAR_ARTISTS = [
+  { id: 'K8vZ9171Jo7', name: 'Arctic Monkeys', genre: 'Rock', subGenre: 'Indie Rock', imageUrl: '' },
+  { id: 'K8vZ9171oV0', name: 'Radiohead', genre: 'Rock', subGenre: 'Alternative', imageUrl: '' },
+  { id: 'K8vZ91711e7', name: 'The Chemical Brothers', genre: 'Electronic', subGenre: 'Electronic', imageUrl: '' },
+  { id: 'K8vZ9171JeV', name: 'Placebo', genre: 'Rock', subGenre: 'Alternative', imageUrl: '' },
+  { id: 'K8vZ9171oZV', name: 'Massive Attack', genre: 'Electronic', subGenre: 'Trip Hop', imageUrl: '' },
+  { id: 'K8vZ91718wV', name: 'Coldplay', genre: 'Rock', subGenre: 'Pop', imageUrl: '' },
+  { id: 'K8vZ9171HeV', name: 'The 1975', genre: 'Rock', subGenre: 'Indie', imageUrl: '' },
+  { id: 'K8vZ9171oaV', name: 'Portishead', genre: 'Electronic', subGenre: 'Trip Hop', imageUrl: '' },
+];
+
+// Genre-based suggestions
+const SUGGESTIONS_BY_GENRE = {
+  'Rock': ['K8vZ91718wV', 'K8vZ9171HeV', 'K8vZ9171JeV'],
+  'Electronic': ['K8vZ9171oZV', 'K8vZ9171oaV', 'K8vZ91711e7'],
+  'Indie Rock': ['K8vZ91718wV', 'K8vZ9171HeV'],
+  'Alternative': ['K8vZ9171JeV', 'K8vZ9171HeV'],
+  'Trip Hop': ['K8vZ9171oZV', 'K8vZ9171oaV'],
+};
 
 const formatDate = (dateStr) => {
   if (!dateStr || dateStr === 'TBA') return null;
@@ -176,26 +235,117 @@ const ConcertCard = ({ concert, index, artistName }) => {
   );
 };
 
+// ── ARTIST SEARCH WITH LIVE DROPDOWN ─────────────────────────────────────────
+const ArtistSearch = ({ selectedArtists, onToggle }) => {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const debounceRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Compute suggestions based on selected artists' genres
+  const suggestions = (() => {
+    if (selectedArtists.length === 0) return POPULAR_ARTISTS;
+    const genres = selectedArtists.map(a => a.genre).filter(Boolean);
+    const suggestedIds = new Set(genres.flatMap(g => SUGGESTIONS_BY_GENRE[g] || []));
+    const selectedIds = new Set(selectedArtists.map(a => a.id));
+    return POPULAR_ARTISTS.filter(a => suggestedIds.has(a.id) && !selectedIds.has(a.id));
+  })();
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/search-artists?keyword=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        setResults(data);
+      } catch (e) { console.error(e); }
+      setSearching(false);
+    }, 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [query]);
+
+  const displayItems = query.trim() ? results : POPULAR_ARTISTS;
+  const sectionLabel = query.trim() ? 'Arama Sonuçları' : 'Popüler Sanatçılar';
+
+  return (
+    <div>
+      <div className="search-box">
+        <input
+          ref={inputRef}
+          className="search-box-input"
+          placeholder="Sanatçı ara... (örn. Radiohead, Bicep)"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onFocus={() => setShowDropdown(true)}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          autoComplete="off"
+        />
+        {searching && <span className="search-spinner spin">↻</span>}
+      </div>
+
+      {showDropdown && (
+        <div className="dropdown">
+          <div className="dropdown-section-label">{sectionLabel}</div>
+          {displayItems.length === 0 && query && !searching && (
+            <div style={{ padding: '16px', fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>Sonuç bulunamadı</div>
+          )}
+          {displayItems.map(artist => {
+            const isSelected = selectedArtists.find(a => a.id === artist.id);
+            return (
+              <div key={artist.id} className={`dropdown-item ${isSelected ? 'selected' : ''}`} onMouseDown={() => onToggle(artist)}>
+                {artist.imageUrl
+                  ? <img src={artist.imageUrl} alt={artist.name} className="d-img" />
+                  : <div className="d-img-placeholder">🎸</div>
+                }
+                <div className="d-info">
+                  <div className="d-name">{artist.name}</div>
+                  <div className="d-sub">{artist.genre}{artist.subGenre && artist.subGenre !== artist.genre ? ` · ${artist.subGenre}` : ''}</div>
+                </div>
+                {isSelected ? <span className="d-check">✓</span> : <span className="d-add">+</span>}
+              </div>
+            );
+          })}
+
+          {/* SUGGESTIONS */}
+          {suggestions.length > 0 && !query.trim() && selectedArtists.length > 0 && (
+            <>
+              <div className="dropdown-section-label" style={{ marginTop: 4 }}>Bunları da beğenebilirsin</div>
+              {suggestions.slice(0,4).map(artist => {
+                const isSelected = selectedArtists.find(a => a.id === artist.id);
+                if (isSelected) return null;
+                return (
+                  <div key={`sug-${artist.id}`} className="dropdown-item" onMouseDown={() => onToggle(artist)}>
+                    <div className="d-img-placeholder">✨</div>
+                    <div className="d-info">
+                      <div className="d-name">{artist.name}</div>
+                      <div className="d-sub">{artist.genre}{artist.subGenre && artist.subGenre !== artist.genre ? ` · ${artist.subGenre}` : ''}</div>
+                    </div>
+                    <span className="d-add">+</span>
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── ONBOARDING ────────────────────────────────────────────────────────────────
 const Onboarding = ({ onComplete }) => {
   const [step, setStep] = useState(0);
-  const [query, setQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
   const [selectedArtists, setSelectedArtists] = useState([]);
   const [cities, setCities] = useState([]);
   const [cityInput, setCityInput] = useState('');
   const [wantsCities, setWantsCities] = useState(null);
-
-  const searchArtists = useCallback(async () => {
-    if (!query.trim()) return;
-    setSearching(true);
-    try {
-      const res = await fetch(`/api/search-artists?keyword=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      setSearchResults(data);
-    } catch (e) { console.error(e); }
-    setSearching(false);
-  }, [query]);
 
   const toggleArtist = (artist) => {
     setSelectedArtists(prev => prev.find(a => a.id === artist.id) ? prev.filter(a => a.id !== artist.id) : [...prev, artist]);
@@ -222,35 +372,22 @@ const Onboarding = ({ onComplete }) => {
         {step === 0 && (
           <>
             <div className="ob-title">Takip etmek istediğin sanatçılar?</div>
-            <div className="ob-sub">Arama yaparak sanatçı ekle. UK'deki konserlerini takip edeceğiz.</div>
-            <div className="ob-search-row">
-              <input className="ob-input" placeholder="Sanatçı ara... (örn. Radiohead)" value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchArtists()} />
-              <button className="ob-btn" onClick={searchArtists} disabled={searching || !query.trim()}>{searching ? '...' : 'Ara'}</button>
-            </div>
-            {searchResults.length > 0 && (
-              <div className="search-results">
-                {searchResults.map(artist => {
-                  const isSelected = selectedArtists.find(a => a.id === artist.id);
-                  return (
-                    <div key={artist.id} className={`search-result-item ${isSelected ? 'selected' : ''}`} onClick={() => toggleArtist(artist)}>
-                      {artist.imageUrl ? <img src={artist.imageUrl} alt={artist.name} className="result-img" /> : <div className="result-img-placeholder">🎸</div>}
-                      <div className="result-info">
-                        <div className="result-name">{artist.name}</div>
-                        <div className="result-genre">{artist.genre}{artist.subGenre && artist.subGenre !== artist.genre ? ` · ${artist.subGenre}` : ''}</div>
-                      </div>
-                      {isSelected && <span className="result-check">✓</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <div className="ob-sub">Aşağıdan seç veya arama yap. Seçtiklerine göre öneri de sunacağız.</div>
+
+            <ArtistSearch selectedArtists={selectedArtists} onToggle={toggleArtist} />
+
             {selectedArtists.length > 0 && (
               <div className="selected-list">
                 {selectedArtists.map(a => (
-                  <div key={a.id} className="selected-chip">{a.name}<button className="chip-remove" onClick={() => toggleArtist(a)}>×</button></div>
+                  <div key={a.id} className="selected-chip">
+                    {a.imageUrl ? <img src={a.imageUrl} alt={a.name} className="chip-avatar" /> : <div className="chip-avatar-placeholder">🎸</div>}
+                    {a.name}
+                    <button className="chip-remove" onClick={() => toggleArtist(a)}>×</button>
+                  </div>
                 ))}
               </div>
             )}
+
             <div className="ob-actions">
               {selectedArtists.length === 0 && <button className="skip-btn" onClick={() => setStep(1)}>Şimdilik geç</button>}
               <button className="ob-btn" onClick={() => setStep(1)} disabled={selectedArtists.length === 0}>Devam Et →</button>
@@ -272,7 +409,7 @@ const Onboarding = ({ onComplete }) => {
               <>
                 <div className="ob-search-row">
                   <input className="ob-input" placeholder="Şehir ekle... (örn. London, Liverpool)" value={cityInput} onChange={e => setCityInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCity()} />
-                  <button className="ob-btn" onClick={addCity} disabled={!cityInput.trim()}>Ekle</button>
+                  <button className="ob-btn-city" onClick={addCity} disabled={!cityInput.trim()}>Ekle</button>
                 </div>
                 {cities.length > 0 && (
                   <div className="city-list">
@@ -294,6 +431,7 @@ const Onboarding = ({ onComplete }) => {
   );
 };
 
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [setup, setSetup] = useState(() => { try { return JSON.parse(localStorage.getItem('gr_setup')) || null; } catch { return null; } });
   const [tab, setTab] = useState('artists');
