@@ -299,7 +299,7 @@ const ArtistSearch = ({ selectedArtists, onToggle }) => {
           {displayItems.map(artist => {
             const isSelected = selectedArtists.find(a => a.id === artist.id);
             return (
-              <div key={artist.id} className={`dropdown-item ${isSelected ? 'selected' : ''}`} onMouseDown={() => { onToggle(artist); setQuery(''); setResults([]); }}
+              <div key={artist.id} className={`dropdown-item ${isSelected ? 'selected' : ''}`} onMouseDown={() => { onToggle(artist); setQuery(''); setResults([]); }}>
                 {artist.imageUrl
                   ? <img src={artist.imageUrl} alt={artist.name} className="d-img" />
                   : <div className="d-img-placeholder">🎸</div>
@@ -321,7 +321,7 @@ const ArtistSearch = ({ selectedArtists, onToggle }) => {
                 const isSelected = selectedArtists.find(a => a.id === artist.id);
                 if (isSelected) return null;
                 return (
-                  <div key={`sug-${artist.id}`} className="dropdown-item" onMouseDown={() => onToggle(artist)}>
+                  <div key={`sug-${artist.id}`} className="dropdown-item" onMouseDown={() => { onToggle(artist); setQuery(''); setResults([]); }}>
                     <div className="d-img-placeholder">✨</div>
                     <div className="d-info">
                       <div className="d-name">{artist.name}</div>
@@ -349,8 +349,6 @@ const Onboarding = ({ onComplete }) => {
 
   const toggleArtist = (artist) => {
     setSelectedArtists(prev => prev.find(a => a.id === artist.id) ? prev.filter(a => a.id !== artist.id) : [...prev, artist]);
-    setQuery('');
-    setResults([]);
   };
 
   const addCity = () => {
