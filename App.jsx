@@ -349,6 +349,8 @@ const Onboarding = ({ onComplete }) => {
 
   const toggleArtist = (artist) => {
     setSelectedArtists(prev => prev.find(a => a.id === artist.id) ? prev.filter(a => a.id !== artist.id) : [...prev, artist]);
+    setQuery('');
+    setResults([]);
   };
 
   const addCity = () => {
