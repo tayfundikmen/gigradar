@@ -299,7 +299,7 @@ const ArtistSearch = ({ selectedArtists, onToggle }) => {
           {displayItems.map(artist => {
             const isSelected = selectedArtists.find(a => a.id === artist.id);
             return (
-              <div key={artist.id} className={`dropdown-item ${isSelected ? 'selected' : ''}`} onMouseDown={() => onToggle(artist)}>
+              <div key={artist.id} className={`dropdown-item ${isSelected ? 'selected' : ''}`} onMouseDown={() => { onToggle(artist); setQuery(''); setResults([]); }}
                 {artist.imageUrl
                   ? <img src={artist.imageUrl} alt={artist.name} className="d-img" />
                   : <div className="d-img-placeholder">🎸</div>
