@@ -331,7 +331,7 @@ export default function App() {
     try {
       const results = [];
       for (const a of artists) {
-        const url = `https://app.ticketmaster.com/discovery/v2/events.json?keyword=${encodeURIComponent(a.name)}&countryCode=GB&classificationName=music&size=5&sort=date,asc&apikey=${API_KEY}`;
+        const url = `/api/concerts?keyword=${encodeURIComponent(a.name)}`;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         const data = await res.json();
